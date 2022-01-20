@@ -36,3 +36,16 @@
     transform: rotate(360deg);
   }
 }
+
+
+.header {
+    margin-top: 10px;
+    margin-bottom: 30px;
+}
+
+.s-test-card {
+  margin: 0 auto;
+  margin-top: 20px;
+  display: block;
+
+}
