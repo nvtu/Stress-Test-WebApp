@@ -29,7 +29,7 @@ function App() {
 			<div className="body">
 				{/* <RankingContainer /> */}
 				<STestContainer 
-					totalTimeInSeconds={10}
+					totalTimeInSeconds={50}
 				/>
 			</div>
 

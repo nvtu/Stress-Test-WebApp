@@ -1,31 +1,36 @@
-import { createSlice } from '@reduxjs/toolkit';
+let initialState = {
+    question: "X + Y - Z = ?",
+    level: "Easy",
+    numCorrectAnswer: 0,
+    totalNumberOfQuestions: 0,
+}
 
 
-export const stestSlice = createSlice({
-    name: 'stest',
-    initialState: {
-        question: "A + B - C * D = ?",
-        level: "Easy",
-        numCorrectAnswer: 0,
-        totalNumQuestions: 0,
-    },
-    reducers: {
-        setQuestion: (state, action) => {
-            state.question = action.payload;
-        },
-        setLevel: (state, action) => {
-            state.level = action.payload;
-        },
-        setCorrectAnswer: (state, action) => {
-            state.numCorrectAnswer = action.payload;
-        },
-        setTotalNumberOfQuestions: (state, action) => {
-            state.totalNumQuestions = action.payload;
-        } 
-    },
-})
+const stestReducer = (state = initialState, action) => {
+    switch (action.type){
+        case "SET_QUESTION":
+            return {
+                ...state,
+                question: action.question,
+            }
+        case "SET_LEVEL":
+            return {
+                ...state,
+                level: action.level,
+            }
+        case "SET_NUM_CORRECT_ANSWER":
+            return {
+                ...state,
+                numCorrectAnswer: action.numCorrectAnswer,
+            }
+        case "SET_TOTAL_NUMBER_OF_QUESTIONS":
+            return {
+                ...state,
+                totalNumberOfQuestions: action.totalNumberOfQuestions,
+            }
+        default:
+            return state
+    }
+}
 
-
-export const { setQuestion, setLevel, setCorrectAnswer, setTotalNumberOfQuestions } = stestSlice.actions;
-
-export default stestSlice.reducer;
+export default stestReducer;

@@ -4,24 +4,27 @@ import { fetchDataError, fetchDataSuccess, fetchDataRequest } from "./actionFetc
 
 export const fetchData = (api, method, params) => {
     return dispatch => {
-        dispatch(fetchDataRequest());
+        dispatch(fetchDataRequest(api, params));
+        let instance = axios.create()
         if (method == "POST") {
-            axios.post(api, params)
-                .then(res => {
-                    dispatch(fetchDataSuccess(res.data));
-                })
-                .catch(err => {
-                    dispatch(fetchDataError(err));
-                })
+            return instance.post(api, params)
+            .catch(err => {
+                dispatch(fetchDataError(err));
+            })
+            .then(res => {
+                dispatch(fetchDataSuccess(res.data))
+                return res.data
+            })
         }
         else {
-            axios.get(api)
-                .then(res => {
-                    dispatch(fetchDataSuccess(res.data));
-                })
+            return instance.get(api)
                 .catch(err => {
                     dispatch(fetchDataError(err));
-                });
+                })
+                .then(res => {
+                    dispatch(fetchDataSuccess(res.data));
+                    return res.data;
+                })
         }
     };
 }

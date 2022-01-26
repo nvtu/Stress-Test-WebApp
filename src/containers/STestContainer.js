@@ -2,27 +2,44 @@ import { useEffect, useState } from 'react';
 import ProgressBarTimer from "../components/ProgressBarTimer";
 import STestCard from "../components/STestCard";
 import { Button, Form } from "react-bootstrap";
-import { fetchData } from './actions/fetchData';
+import { fetchData } from '../actions/fetchData';
+import { API_GENERATE_STEST_WITH_LEVEL, API_TEST_SESSION_LOGGING } from '../constants/serverConstants';
+import { setQuestion, setLevel, setNumCorrectAnswer, setTotalNumberOfQuestions } from '../actions/actionSTest';
+import { connect } from 'react-redux';
+import Sound from 'react-sound';
 
 
 function STestContainer(props) {
     const { totalTimeInSeconds } = props;
     // const { testLevel, setTestLevel } = useState("Easy")
-    const [ testLevel, setTestLevel ] = useState("Easy")
     const [isTestStart, setIsTestStart] = useState(false);
     const [timeLeftInSeconds, setTimeLeftInSeconds] = useState(totalTimeInSeconds);
 
+
     const handleOnStartBtnClick = () => {
-        setIsTestStart(!isTestStart)
-        // TRIGGER THE START TIMER ON SERVER
-        let api = 
-        params = { 'user_id': 'user1', 'session_id': `stest_${testLevel}` }
-        fetchData()
-    }
+        let updatedIsTestStart = !isTestStart; 
+        setIsTestStart(updatedIsTestStart);
+       // TRIGGER THE START TIMER ON SERVER
+        let type = updatedIsTestStart ? "Start" : "Stop"
+        let params = { 'user_id': 'user1', 'session_id': `stest_${props.level}`, type: type }
+        props.dispatch(fetchData(API_TEST_SESSION_LOGGING, 'POST', params)).then(res => {
+            // FETCH THE NEXT QUESTION
+            if (updatedIsTestStart) {
+                props.dispatch(setNumCorrectAnswer(0))
+                props.dispatch(setTotalNumberOfQuestions(0))
+                params = { 'user_id': 'user1', 'level': props.level }
+                // FETCH THE QUESTIONS
+                props.dispatch(fetchData(API_GENERATE_STEST_WITH_LEVEL, 'POST', params)).then(res => {
+                    let question = res.formula
+                    props.dispatch(setQuestion(question))
+                })
+            }
+        })
+   }
 
     const handleOnTestLevelChange = (e) => {
         let currentTestLevel = e.target.id
-        setTestLevel(currentTestLevel)
+        props.dispatch(setLevel(currentTestLevel))
     }
 
     useEffect(() => {
@@ -31,7 +48,7 @@ function STestContainer(props) {
                 let updatedTimeLeftInSeconds = Math.max(0, timeLeftInSeconds - 1)
                 setTimeLeftInSeconds(updatedTimeLeftInSeconds)
                 if (timeLeftInSeconds === 0) {
-                    console.log("Timed's up!")
+                    setIsTestStart(!isTestStart)
                 }
             }, 1000)
             return () => clearTimeout(timer);
@@ -52,12 +69,13 @@ function STestContainer(props) {
                 <Form.Group className='mb-3'>
                     <Form.Check
                         inline
-                        defaultChecked={testLevel}
+                        defaultChecked={props.level}
                         type="radio"
                         name="group1"
                         id="Easy"
                         label="Easy"
                         onClick={handleOnTestLevelChange}
+                        disabled={isTestStart}
                         />
                     <Form.Check 
                         inline
@@ -66,6 +84,7 @@ function STestContainer(props) {
                         id="Medium"
                         label="Medium"
                         onClick={handleOnTestLevelChange}
+                        disabled={isTestStart}
                         />
                     <Form.Check 
                         inline
@@ -74,6 +93,7 @@ function STestContainer(props) {
                         id="Hard"
                         label="Hard"
                         onClick={handleOnTestLevelChange}
+                        disabled={isTestStart}
                     />
                 </Form.Group>
 
@@ -81,11 +101,15 @@ function STestContainer(props) {
             <Button variant='primary' onClick={handleOnStartBtnClick}>
                 {isTestStart ? "Stop" : "Start"} 
             </Button>
-  
-            <STestCard />
+            
+            <STestCard question = { props.question } isTestStart = { isTestStart } />
         </div>
 
     )
 }
 
-export default STestContainer;
+const mapStateToProps = (state) => ({
+    ...state.stest,
+})
+
+export default connect(mapStateToProps)(STestContainer);

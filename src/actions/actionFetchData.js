@@ -3,8 +3,10 @@ export const FETCH_DATA_SUCCESS = "FETCH_DATA_SUCCESS";
 export const FETCH_DATA_ERROR = "FETCH_DATA_ERROR";
 
 
-export const fetchDataRequest = () => ({
-    type: FETCH_DATA_REQUEST
+export const fetchDataRequest = (api, params) => ({
+    type: FETCH_DATA_REQUEST,
+    api,
+    params
 })
 
 
