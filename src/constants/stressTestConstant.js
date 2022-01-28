@@ -1,0 +1,2 @@
+export const STEST_TOTAL_TIME_IN_SECONDS = 30;
+export const READING_TOTAL_TIME_IN_SECONDS = 30;

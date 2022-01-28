@@ -6,7 +6,9 @@ import { fetchData } from '../actions/fetchData';
 import { API_GENERATE_STEST_WITH_LEVEL, API_TEST_SESSION_LOGGING } from '../constants/serverConstants';
 import { setQuestion, setLevel, setNumCorrectAnswer, setTotalNumberOfQuestions } from '../actions/actionSTest';
 import { connect } from 'react-redux';
-import Sound from 'react-sound';
+import { notification } from 'antd';
+import 'antd/dist/antd.css';
+import { MehOutlined } from '@ant-design/icons';
 
 
 function STestContainer(props) {
@@ -17,17 +19,28 @@ function STestContainer(props) {
 
 
     const handleOnStartBtnClick = () => {
+        if (props.userID === "") {
+            notification.error({
+                message: 'User ID Absent',
+                description: 'Please input user ID first!',
+                placement: 'bottomRight',
+                duration: 1.5,
+                icon: <MehOutlined />,
+            })
+            return
+        }
+
         let updatedIsTestStart = !isTestStart; 
         setIsTestStart(updatedIsTestStart);
        // TRIGGER THE START TIMER ON SERVER
         let type = updatedIsTestStart ? "Start" : "Stop"
-        let params = { 'user_id': 'user1', 'session_id': `stest_${props.level}`, type: type }
+        let params = { 'user_id': props.userID, 'session_id': `stest_${props.level}`, type: type }
         props.dispatch(fetchData(API_TEST_SESSION_LOGGING, 'POST', params)).then(res => {
             // FETCH THE NEXT QUESTION
             if (updatedIsTestStart) {
                 props.dispatch(setNumCorrectAnswer(0))
                 props.dispatch(setTotalNumberOfQuestions(0))
-                params = { 'user_id': 'user1', 'level': props.level }
+                params = { 'user_id': props.userID, 'level': props.level }
                 // FETCH THE QUESTIONS
                 props.dispatch(fetchData(API_GENERATE_STEST_WITH_LEVEL, 'POST', params)).then(res => {
                     let question = res.formula
@@ -49,6 +62,8 @@ function STestContainer(props) {
                 setTimeLeftInSeconds(updatedTimeLeftInSeconds)
                 if (timeLeftInSeconds === 0) {
                     setIsTestStart(!isTestStart)
+                    let params = { 'user_id': props.userID, 'session_id': `stest_${props.level}`, type: "Stop" }
+                    props.dispatch(fetchData(API_TEST_SESSION_LOGGING, 'POST', params))
                 }
             }, 1000)
             return () => clearTimeout(timer);
@@ -58,7 +73,7 @@ function STestContainer(props) {
     
 
     return (
-        <div>
+        <div style={{ paddingTop: "20px", position: "fixed", 'width': "100%"}}>
             <h2>The S-Test</h2> 
             <ProgressBarTimer 
                 totalTimeInSeconds={totalTimeInSeconds}
@@ -96,7 +111,6 @@ function STestContainer(props) {
                         disabled={isTestStart}
                     />
                 </Form.Group>
-
             </Form>
             <Button variant='primary' onClick={handleOnStartBtnClick}>
                 {isTestStart ? "Stop" : "Start"} 
@@ -110,6 +124,7 @@ function STestContainer(props) {
 
 const mapStateToProps = (state) => ({
     ...state.stest,
+    ...state.userInfo,
 })
 
 export default connect(mapStateToProps)(STestContainer);

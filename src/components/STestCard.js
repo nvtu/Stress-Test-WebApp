@@ -19,7 +19,7 @@ function STestCard(props) {
         if (!isTestStart) return;
         props.dispatch(setTotalNumberOfQuestions(props.totalNumberOfQuestions + 1))
         // CHECK IF THE ANSWER IS CORRECT, UPDATE IT
-        let params = { 'user_id': 'user1', 'level': `${props.level}`, 'answer': answer }
+        let params = { 'user_id': props.userID, 'level': `${props.level}`, 'answer': answer }
         props.dispatch(fetchData(API_VALIDATE_ANSWER, 'POST', params)).then(res => {
             let validate = res.validate_result
             if (validate) {
@@ -31,7 +31,7 @@ function STestCard(props) {
             }
             setIsPlaying(true)
             // FETCH NEXT QUESTION
-            params = { 'user_id': 'user1', 'level': `${props.level}` }
+            params = { 'user_id': props.userID, 'level': `${props.level}` }
             props.dispatch(fetchData(API_GENERATE_STEST_WITH_LEVEL, 'POST', params)).then(res => {
                 let question = res.formula
                 props.dispatch(setQuestion(question))
@@ -44,9 +44,9 @@ function STestCard(props) {
     const handleOnTextChange = (e) => {
         setIsPlaying(false)
         const textValue = e.target.value
-        const re = /^[0-9\b]+$/ // Only allow numbers input
+        const re = /^-?[0-9\b]+$/ // Only allow numbers input
         // if value is not blank, then test the regex
-        if (textValue === '' || re.test(textValue)) {
+        if (textValue === '' ||  re.test(textValue) || textValue === '-') {
             setAnswer(textValue)
         }
     }
@@ -81,6 +81,7 @@ function STestCard(props) {
                         aria-label="Answer"
                         aria-describedby="basic-addon2"
                         value={answer}
+                        autoFocus={true}
                         onChange={handleOnTextChange}
                         onKeyPress={handleOnKeyPress}
                     />
@@ -96,6 +97,7 @@ function STestCard(props) {
                     url={`${process.env.PUBLIC_URL}/assets/sounds/tick.mp3`}
                     playStatus={isTestStart ? Sound.status.PLAYING : Sound.status.STOPPED}
                     playbackRate={1}
+                    volume={200}
                 />
                 <Sound 
                     url = {`${process.env.PUBLIC_URL}/assets/sounds/${sound}`}
@@ -113,6 +115,7 @@ function STestCard(props) {
 
 const mapStateToProps = (state) => ({
     ...state.stest,
+    ...state.userInfo,
 })
 
 

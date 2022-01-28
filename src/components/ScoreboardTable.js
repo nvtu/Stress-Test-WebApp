@@ -57,4 +57,5 @@ function ScoreboardTable(props) {
     )
 }
 
+
 export default ScoreboardTable;
