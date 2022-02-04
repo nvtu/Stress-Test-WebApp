@@ -25,6 +25,7 @@ function App() {
 					/>
 
 				<div className="header">
+					<title>Awesome Stress Test</title>
 					<NavBar />
 				</div>
 

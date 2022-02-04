@@ -12,7 +12,7 @@ function RankingContainer(props) {
 
     useEffect(() => {
         if (!fetched) {
-            console.log("BBB")
+            // Fetches scoreboard data from server whenever the page is loaded
             props.dispatch(fetchData(API_GET_SCOREBOARD, 'GET', {})).then(res => props.dispatch(setScoreboardData(res)))
             setFetched(true)
         }

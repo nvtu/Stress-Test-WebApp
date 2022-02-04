@@ -8,6 +8,10 @@ import { Provider } from 'react-redux';
 
 ReactDOM.render(
   <Provider store = {store}>
+    <meta 
+        name="description"
+        content="Awesome stress tests"
+    />
     <App />
   </Provider>,
   document.getElementById('root')

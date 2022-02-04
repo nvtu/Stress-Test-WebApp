@@ -4,6 +4,7 @@ import thunk from 'redux-thunk'
 import stestReducer from './stest';
 import userInfoReducer from './user_info';
 import scoreboardReducer from './scoreboard';
+import readingTestReducer from './reading_test';
 
 
 export default configureStore({
@@ -11,6 +12,7 @@ export default configureStore({
         stest: stestReducer,
         userInfo: userInfoReducer,
         scoreboard: scoreboardReducer,
+        readingTest: readingTestReducer,
     },
     middleware: [thunk, logger],
 })

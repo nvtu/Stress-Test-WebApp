@@ -6,8 +6,10 @@ import ProgressBarTimer from '../components/ProgressBarTimer';
 import { notification } from 'antd';
 import 'antd/dist/antd.css';
 import { MehOutlined } from '@ant-design/icons';
-import { API_GENERATE_READING_TESTS, API_READING_TEST_SESSION_LOGGING, API_TEST_SESSION_LOGGING } from '../constants/serverConstants';
+import { API_GENERATE_READING_TESTS, API_GET_READING_TEST, API_READING_TEST_SESSION_LOGGING, API_UPDATE_READING_TEST_SCORE } from '../constants/serverConstants';
+import { setReadingTestLevel, setReadingTestNumCorrectAnswers, setReadingTestTotalNumberOfQuestions } from '../actions/actionReadingTest'
 import { fetchData } from '../actions/fetchData';
+import Sound from 'react-sound';
 
 
 function ReadingContainer(props) {
@@ -15,12 +17,12 @@ function ReadingContainer(props) {
     const [fetched, setFetched] = useState(false)
     const [readingLink, setReadingLink] = useState(null)
     const [questionLink, setQuestionLink] = useState(null)
-    const [isTestStart, setIsTestStart] = useState(true)
+    const [isTestStart, setIsTestStart] = useState(false)
     const [timeLeftInSeconds, setTimeLeftInSeconds] = useState(totalTimeInSeconds)
 
     const handleOnTestLevelChange = (e) => {
         let currentTestLevel = e.target.id
-        // props.dispatch(setLevel(currentTestLevel))
+        props.dispatch(setReadingTestLevel(currentTestLevel))
     }
 
     const handleOnStartBtnClick = () => {
@@ -34,27 +36,69 @@ function ReadingContainer(props) {
             })
             return
         }
-
-        let updatedIsTestStart = !isTestStart; 
-        setIsTestStart(updatedIsTestStart);
-        let params = { 'user_id': props.userID, 'session_id': `${}` }
+        let updatedIsTestStart = !isTestStart;
+        if (!updatedIsTestStart) {
+            setIsTestStart(updatedIsTestStart)
+            setReadingLink(null)
+            setQuestionLink(null)
+            props.dispatch(setReadingTestNumCorrectAnswers(0))
+            props.dispatch(setReadingTestTotalNumberOfQuestions(0))
+        } 
+        console.log(updatedIsTestStart)
+        // LOG READING TEST SESSION
+        let params = { 'user_id': props.userID, 'session_id': `${props.level}`, 'type': updatedIsTestStart ? 'Start' : 'Stop' }
+        props.dispatch(fetchData(API_READING_TEST_SESSION_LOGGING, 'POST', params)).then(res => {
+                if (res.status === 'Success' && updatedIsTestStart) {
+                    // If previous API POST request is successful, then generate the reading test
+                    params = { 'user_id': props.userID }
+                    props.dispatch(fetchData(API_GENERATE_READING_TESTS, 'POST', params)).then(res => {
+                        if (res.status === 'Success' || res.status === 'Duplicated') {
+                            // If previous API POST request is successful, then fetch the reading test data
+                            params = { 'user_id': props.userID, 'session_id': props.level }
+                            props.dispatch(fetchData(API_GET_READING_TEST, 'POST', params)).then(res => {
+                                setReadingLink(res.reading_link)
+                                setQuestionLink(res.question_link)
+                                props.dispatch(setReadingTestTotalNumberOfQuestions(res.num_questions))
+                                setTimeLeftInSeconds(totalTimeInSeconds)
+                                setIsTestStart(updatedIsTestStart)
+                            })
+                        }
+                    })
+                }
+        })
     }
 
     const handleOnSubmitBtnClick = () => {
-
+        if (!isTestStart) { 
+            notification.error({
+                message: 'Test Not Started',
+                description: 'Please start the test first!',
+                placement: 'bottomRight',
+                duration: 1.5,
+            })
+            return
+        }
+        let params = { 'user_id': props.userID, 'session_id': `${props.level}`, 'number_of_correct_answers': props.numberOfCorrectAnswers }
+        props.dispatch(fetchData(API_UPDATE_READING_TEST_SCORE, 'POST', params)).then(res => {
+            if (res.status === 'Success') {
+                notification.success({
+                    message: 'Success',
+                    description: 'Result Submitted Successfully!',
+                    placement: 'bottomRight',
+                    duration: 1.5,
+                })
+                let updatedIsTestStart = !isTestStart;
+                setIsTestStart(updatedIsTestStart)
+            }
+        })
     }
 
     const handleOnNumCorrectAnswerChange = (value) => {
-        console.log(value)
+        let numberOfCorrectAnswers = value
+        props.dispatch(setReadingTestNumCorrectAnswers(numberOfCorrectAnswers))
     }
 
     useEffect(() => {
-        if (!fetched && props.userID !== "") {
-            let params = { 'user_id': props.userID }
-            props.dispatch(fetchData(API_GENERATE_READING_TESTS, 'POST', params))
-            setFetched(true)
-        }
-
         if (isTestStart) {
             const timer = setTimeout(() => {
                 let updatedTimeLeftInSeconds = Math.max(0, timeLeftInSeconds - 1)
@@ -117,36 +161,39 @@ function ReadingContainer(props) {
                     {isTestStart ? "Stop" : "Start"}
                 </Button>
             </div>
-            {/* <div style={{ paddingTop: "190px", textAlign: "left", marginLeft: "100px", paddingBottom: "30px"}}> */}
-            {
-                isTestStart ? 
-                <div style={{ paddingTop: "250px" }}>
-                    <div>
-                        <a href={readingLink} target="_blank" rel="noreferrer noopener">Reading Link</a>
-                        <br/>
-                        <a href={questionLink} target="_blank" rel="noreferrer noopener">Question Link</a>
-                    </div>
-                    <div>
-                        <div>
-                            <InputNumber 
-                                size="small" 
-                                default={0}
-                                onChange={handleOnNumCorrectAnswerChange} 
-                                style={{ width: "6%", marginRight: "10px" }} />
-                            correct answers / {props.totalQuestions} questions                       
-                        </div>
-                        <Button variant='primary' style={{ marginTop: "10px" }}>Submit</Button>
-                    </div>
+            <div style={{ paddingTop: "250px" }}>
+                <div>
+                    <a href={readingLink} target="_blank" rel="noreferrer noopener">Reading Link</a>
+                    <br/>
+                    <a href={questionLink} target="_blank" rel="noreferrer noopener">Question Link</a>
                 </div>
-                :
-                <div></div>
-            }
+                <div>
+                    <div>
+                        <InputNumber 
+                            size="small"
+                            min={0}
+                            max={props.numberOfQuestions} 
+                            default={0}
+                            onChange={handleOnNumCorrectAnswerChange} 
+                            style={{ width: "6%", marginRight: "10px" }} />
+                        <b>correct answers / {props.numberOfQuestions} questions</b>
+                    </div>
+                    <Button variant='primary' style={{ marginTop: "10px" }} onClick={ handleOnSubmitBtnClick }>Submit</Button>
+                </div>
+            </div>
+            <Sound 
+                    url={`${process.env.PUBLIC_URL}/assets/sounds/tick.mp3`}
+                    playStatus={isTestStart ? Sound.status.PLAYING : Sound.status.STOPPED}
+                    playbackRate={1}
+                    volume={200}
+            />
         </div>
     )
 }
 
 const mapStateToProps = (state) => ({
     ...state.userInfo,
+    ...state.readingTest,
 })
 
 
