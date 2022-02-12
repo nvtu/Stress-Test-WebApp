@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Button, Form, InputGroup, FormControl } from 'react-bootstrap';
+import { Button, Form } from 'react-bootstrap';
 import { InputNumber } from 'antd'
 import { connect } from 'react-redux';
 import ProgressBarTimer from '../components/ProgressBarTimer';
 import { notification } from 'antd';
 import 'antd/dist/antd.css';
 import { MehOutlined } from '@ant-design/icons';
-import { API_GENERATE_READING_TESTS, API_GET_READING_TEST, API_READING_TEST_SESSION_LOGGING, API_UPDATE_READING_TEST_SCORE } from '../constants/serverConstants';
+import { API_GENERATE_READING_TESTS, API_GET_READING_TEST, API_SESSION_LOGGING, API_UPDATE_READING_TEST_SCORE } from '../constants/serverConstants';
 import { setReadingTestLevel, setReadingTestNumCorrectAnswers, setReadingTestTotalNumberOfQuestions } from '../actions/actionReadingTest'
 import { fetchData } from '../actions/fetchData';
 import Sound from 'react-sound';
@@ -14,7 +14,6 @@ import Sound from 'react-sound';
 
 function ReadingContainer(props) {
     const { totalTimeInSeconds } = props
-    const [fetched, setFetched] = useState(false)
     const [readingLink, setReadingLink] = useState(null)
     const [questionLink, setQuestionLink] = useState(null)
     const [isTestStart, setIsTestStart] = useState(false)
@@ -26,7 +25,7 @@ function ReadingContainer(props) {
     }
 
     const handleOnStartBtnClick = () => {
-        if (props.userID === "") {
+        if (props.userID === "" || props.userID === undefined) {
             notification.error({
                 message: 'User ID Absent',
                 description: 'Please input user ID first!',
@@ -44,27 +43,43 @@ function ReadingContainer(props) {
             props.dispatch(setReadingTestNumCorrectAnswers(0))
             props.dispatch(setReadingTestTotalNumberOfQuestions(0))
         } 
-        console.log(updatedIsTestStart)
         // LOG READING TEST SESSION
         let params = { 'user_id': props.userID, 'session_id': `${props.level}`, 'type': updatedIsTestStart ? 'Start' : 'Stop' }
-        props.dispatch(fetchData(API_READING_TEST_SESSION_LOGGING, 'POST', params)).then(res => {
-                if (res.status === 'Success' && updatedIsTestStart) {
-                    // If previous API POST request is successful, then generate the reading test
-                    params = { 'user_id': props.userID }
-                    props.dispatch(fetchData(API_GENERATE_READING_TESTS, 'POST', params)).then(res => {
-                        if (res.status === 'Success' || res.status === 'Duplicated') {
-                            // If previous API POST request is successful, then fetch the reading test data
-                            params = { 'user_id': props.userID, 'session_id': props.level }
-                            props.dispatch(fetchData(API_GET_READING_TEST, 'POST', params)).then(res => {
-                                setReadingLink(res.reading_link)
-                                setQuestionLink(res.question_link)
-                                props.dispatch(setReadingTestTotalNumberOfQuestions(res.num_questions))
-                                setTimeLeftInSeconds(totalTimeInSeconds)
-                                setIsTestStart(updatedIsTestStart)
-                            })
-                        }
+        props.dispatch(fetchData(API_SESSION_LOGGING, 'POST', params)).then(res => {
+                if (res.status === 'Success') {
+                    let logTime = res.log_time
+                    notification.success({
+                        message: "Reading Test Session Logging Success",
+                        description: `Reading Test Session Logging Success at ${logTime}`,
+                        placement: 'bottomRight',
+                        duration: 1.5
                     })
+                    if (updatedIsTestStart) {
+                        // If previous API POST request is successful, then generate the reading test
+                        params = { 'user_id': props.userID }
+                        props.dispatch(fetchData(API_GENERATE_READING_TESTS, 'POST', params)).then(res => {
+                            if (res.status === 'Success' || res.status === 'Duplicated') {
+                                // If previous API POST request is successful, then fetch the reading test data
+                                params = { 'user_id': props.userID, 'session_id': props.level }
+                                props.dispatch(fetchData(API_GET_READING_TEST, 'POST', params)).then(res => {
+                                    setReadingLink(res.reading_link)
+                                    setQuestionLink(res.question_link)
+                                    props.dispatch(setReadingTestTotalNumberOfQuestions(res.num_questions))
+                                    setTimeLeftInSeconds(totalTimeInSeconds)
+                                    setIsTestStart(updatedIsTestStart)
+                                })
+                            }
+                        })
+                    }
                 }
+                else {
+                    notification.error({
+                        message: "STest Session Logging Failed",
+                        description: `STest Session Logging Failed`,
+                        placement: 'bottomRight',
+                        duration: 1.5
+                    })
+            }
         })
     }
 
@@ -105,14 +120,43 @@ function ReadingContainer(props) {
                 setTimeLeftInSeconds(updatedTimeLeftInSeconds)
                 if (timeLeftInSeconds === 0) {
                     setIsTestStart(!isTestStart)
-                    let params = { 'user_id': props.userID, 'session_id': `Reading${props.level}`, type: "Stop" }
-                    props.dispatch(fetchData(API_READING_TEST_SESSION_LOGGING, 'POST', params))
+                    let params = { 'user_id': props.userID, 'session_id': `${props.level}`, type: "Stop" }
+                    props.dispatch(fetchData(API_SESSION_LOGGING, 'POST', params)).then(res => {
+                        if (res.status === 'Success') {
+                            let logTime = res.log_time
+                            notification.success({
+                                message: "Reading Test Session Logging Success",
+                                description: `Reading Test Session Logging Success at ${logTime}`,
+                                placement: 'bottomRight',
+                                duration: 1.5
+                            })
+                            params = { 'user_id': props.userID, 'session_id': `${props.level}`, 'number_of_correct_answers': props.numberOfCorrectAnswers }
+                            props.dispatch(fetchData(API_UPDATE_READING_TEST_SCORE, 'POST', params)).then(res => {
+                                if (res.status === 'Success') {
+                                    notification.success({
+                                        message: 'Success',
+                                        description: 'Result Submitted Successfully!',
+                                        placement: 'bottomRight',
+                                        duration: 1.5,
+                                    })
+                                }
+                            })
+                        }
+                        else {
+                            notification.error({
+                                message: "STest Session Logging Failed",
+                                description: `STest Session Logging Failed`,
+                                placement: 'bottomRight',
+                                duration: 1.5
+                            })
+                        }
+                    })
                 }
             }, 1000)
             return () => clearTimeout(timer);
         }
         else setTimeLeftInSeconds(totalTimeInSeconds)
-    }, [timeLeftInSeconds, isTestStart, totalTimeInSeconds, props.userID]);
+    }, [props, timeLeftInSeconds, isTestStart, totalTimeInSeconds, props.userID]);
     
 
 

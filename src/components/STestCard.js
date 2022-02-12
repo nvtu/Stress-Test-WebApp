@@ -38,7 +38,7 @@ function STestCard(props) {
             })
         })
         setAnswer("")
-        setIsPlaying(false)
+        // setIsPlaying(false)
     }
 
     const handleOnTextChange = (e) => {
@@ -63,10 +63,7 @@ function STestCard(props) {
             let defaultQuestion = "X + Y - Z = ?"
             props.dispatch(setQuestion(defaultQuestion))
         }
-        if (isPlaying === false) {
-            setPlaySound("")
-        }
-    }, [question, isTestStart, isPlaying])
+    }, [props, question, isTestStart, isPlaying, sound])
 
 
     return (
@@ -97,12 +94,15 @@ function STestCard(props) {
                     url={`${process.env.PUBLIC_URL}/assets/sounds/tick.mp3`}
                     playStatus={isTestStart ? Sound.status.PLAYING : Sound.status.STOPPED}
                     playbackRate={1}
+                    playFromPosition={0}
+                    loop={true}
                     volume={200}
                 />
                 <Sound 
                     url = {`${process.env.PUBLIC_URL}/assets/sounds/${sound}`}
                     playStatus={isPlaying ? Sound.status.PLAYING : Sound.status.STOPPED}
                     // playFromPosition={0}
+                    onFinishPlaying={() => setIsPlaying(false)}
                     playbackRate={1}
                     loop={false}
                 />

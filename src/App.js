@@ -8,6 +8,7 @@ import NavBar from './components/NavBar';
 
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { READING_TOTAL_TIME_IN_SECONDS, STEST_TOTAL_TIME_IN_SECONDS } from './constants/stressTestConstant';
+import LogContainer from './containers/LogContainer';
 // import { Link } from 'react-router'
 
 
@@ -32,6 +33,7 @@ function App() {
 				<div className="body" style={{ marginTop: "50px" }}>
 						<Routes>
 							<Route exact path="/" element={<WelcomeContainer />} />
+							<Route exact path="/log" element={<LogContainer />} />
 							<Route exact path="/stest" element={<STestContainer 
 								totalTimeInSeconds = {STEST_TOTAL_TIME_IN_SECONDS}
 								/>} />

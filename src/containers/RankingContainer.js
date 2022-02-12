@@ -16,7 +16,7 @@ function RankingContainer(props) {
             props.dispatch(fetchData(API_GET_SCOREBOARD, 'GET', {})).then(res => props.dispatch(setScoreboardData(res)))
             setFetched(true)
         }
-    })
+    }, [props, fetched])
     
     return (
         <div style={{ left: "5%", width: "90%", paddingTop: "20px", position: "fixed"}}>

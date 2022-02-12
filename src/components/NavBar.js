@@ -50,6 +50,14 @@ function NavBar(props) {
                         </Link>
                     </Nav.Link>
                     <Nav.Link>
+                        <Link to='/log' style={{
+                            textDecoration: 'inherit',
+                            color: 'inherit',
+                        }}>
+                            Log
+                        </Link>
+                    </Nav.Link>
+                    <Nav.Link>
                         <Link to='/stest' style={{
                             textDecoration: 'inherit',
                             color: 'inherit',

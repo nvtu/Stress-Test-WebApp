@@ -14,5 +14,7 @@ export default configureStore({
         scoreboard: scoreboardReducer,
         readingTest: readingTestReducer,
     },
-    middleware: [thunk, logger],
+    middleware: [thunk, 
+        // logger
+    ],
 })

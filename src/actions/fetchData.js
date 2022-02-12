@@ -6,7 +6,7 @@ export const fetchData = (api, method, params) => {
     return dispatch => {
         dispatch(fetchDataRequest(api, params));
         let instance = axios.create()
-        if (method == "POST") {
+        if (method === "POST") {
             return instance.post(api, params)
             .catch(err => {
                 dispatch(fetchDataError(err));

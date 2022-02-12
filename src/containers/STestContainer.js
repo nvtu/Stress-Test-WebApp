@@ -3,7 +3,7 @@ import ProgressBarTimer from "../components/ProgressBarTimer";
 import STestCard from "../components/STestCard";
 import { Button, Form } from "react-bootstrap";
 import { fetchData } from '../actions/fetchData';
-import { API_GENERATE_STEST_WITH_LEVEL, API_TEST_SESSION_LOGGING } from '../constants/serverConstants';
+import { API_GENERATE_STEST_WITH_LEVEL, API_SESSION_LOGGING, API_STEST_RESET_SCORE } from '../constants/serverConstants';
 import { setQuestion, setLevel, setNumCorrectAnswer, setTotalNumberOfQuestions } from '../actions/actionSTest';
 import { connect } from 'react-redux';
 import { notification } from 'antd';
@@ -19,7 +19,7 @@ function STestContainer(props) {
 
 
     const handleOnStartBtnClick = () => {
-        if (props.userID === "") {
+        if (props.userID === "" || props.userID === undefined) {
             notification.error({
                 message: 'User ID Absent',
                 description: 'Please input user ID first!',
@@ -35,16 +35,35 @@ function STestContainer(props) {
        // TRIGGER THE START TIMER ON SERVER
         let type = updatedIsTestStart ? "Start" : "Stop"
         let params = { 'user_id': props.userID, 'session_id': `stest_${props.level}`, type: type }
-        props.dispatch(fetchData(API_TEST_SESSION_LOGGING, 'POST', params)).then(res => {
-            // FETCH THE NEXT QUESTION
-            if (updatedIsTestStart) {
-                props.dispatch(setNumCorrectAnswer(0))
-                props.dispatch(setTotalNumberOfQuestions(0))
-                params = { 'user_id': props.userID, 'level': props.level }
-                // FETCH THE QUESTIONS
-                props.dispatch(fetchData(API_GENERATE_STEST_WITH_LEVEL, 'POST', params)).then(res => {
-                    let question = res.formula
-                    props.dispatch(setQuestion(question))
+        props.dispatch(fetchData(API_SESSION_LOGGING, 'POST', params)).then(res => {
+            if (res.status === 'Success') {
+                let logTime = res.log_time
+                notification.success({
+                    message: "STest Session Logging Success",
+                    description: `STest Session Logging Success at ${logTime}`,
+                    placement: 'bottomRight',
+                    duration: 1.5
+                })
+                if (updatedIsTestStart){
+                    params = { 'user_id': props.userID, 'session_id': `stest_${props.level}` }
+                    props.dispatch(fetchData(API_STEST_RESET_SCORE, 'POST', params)).then(res => {
+                        props.dispatch(setNumCorrectAnswer(0))
+                        props.dispatch(setTotalNumberOfQuestions(0))
+                        params = { 'user_id': props.userID, 'level': props.level }
+                        // FETCH THE QUESTIONS
+                        props.dispatch(fetchData(API_GENERATE_STEST_WITH_LEVEL, 'POST', params)).then(res => {
+                            let question = res.formula
+                            props.dispatch(setQuestion(question))
+                        })
+                    })
+                }
+            }
+            else {
+                notification.error({
+                    message: "STest Session Logging Failed",
+                    description: `STest Session Logging Failed`,
+                    placement: 'bottomRight',
+                    duration: 1.5
                 })
             }
         })
@@ -63,13 +82,13 @@ function STestContainer(props) {
                 if (timeLeftInSeconds === 0) {
                     setIsTestStart(!isTestStart)
                     let params = { 'user_id': props.userID, 'session_id': `stest_${props.level}`, type: "Stop" }
-                    props.dispatch(fetchData(API_TEST_SESSION_LOGGING, 'POST', params))
+                    props.dispatch(fetchData(API_SESSION_LOGGING, 'POST', params))
                 }
             }, 1000)
             return () => clearTimeout(timer);
         }
         else setTimeLeftInSeconds(totalTimeInSeconds)
-    }, [timeLeftInSeconds, isTestStart, totalTimeInSeconds]);
+    }, [props, timeLeftInSeconds, isTestStart, totalTimeInSeconds]);
     
 
     return (
