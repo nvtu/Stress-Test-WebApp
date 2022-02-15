@@ -79,7 +79,7 @@ function ReadingContainer(props) {
                         placement: 'bottomRight',
                         duration: 1.5
                     })
-            }
+                }
         })
     }
 
@@ -103,7 +103,27 @@ function ReadingContainer(props) {
                     duration: 1.5,
                 })
                 let updatedIsTestStart = !isTestStart;
-                setIsTestStart(updatedIsTestStart)
+                params = { 'user_id': props.userID, 'session_id': `${props.level}`, 'type': updatedIsTestStart ? 'Start' : 'Stop' }
+                props.dispatch(fetchData(API_SESSION_LOGGING, 'POST', params)).then(res => {
+                    if (res.status === 'Success') {
+                        setIsTestStart(updatedIsTestStart)
+                        let logTime = res.log_time
+                        notification.success({
+                            message: "Reading Test Session Logging Success",
+                            description: `Reading Test Session Logging Success at ${logTime}`,
+                            placement: 'bottomRight',
+                            duration: 1.5
+                        })
+                    }
+                    else {
+                        notification.error({
+                            message: "STest Session Logging Failed",
+                            description: `STest Session Logging Failed`,
+                            placement: 'bottomRight',
+                            duration: 1.5
+                        })
+                    }
+                })
             }
         })
     }

@@ -43,7 +43,7 @@ function LogContainer(props) {
         }
 
         let _logTimeTotal = parseInt(logTime)
-        console.log(_logTimeTotal)
+ 
         if (_logTimeTotal === 0 || isNaN(_logTimeTotal)) {
             notification.error({
                 message: "Log Time Error",
@@ -90,7 +90,7 @@ function LogContainer(props) {
                 setTimeLeftInSeconds(updatedTimeLeftInSeconds)
                 if (timeLeftInSeconds === 0) {
                     setStartLogSession(!startLogSession)
-                    let params = { 'user_id': props.userID, 'session_id': `SessionName`, type: "Stop" }
+                    let params = { 'user_id': props.userID, 'session_id': sessionName, type: "Stop" }
                     props.dispatch(fetchData(API_SESSION_LOGGING, 'POST', params)).then(res => {
                         if (res.status === 'Success') {
                             let logTime = res.log_time
